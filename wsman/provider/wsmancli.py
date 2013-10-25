@@ -23,6 +23,7 @@ WSManCLI based provider
 #    along with WSManAPI.  If not, see <http://www.gnu.org/licenses/>.
 
 import sys
+import tempfile
 
 from wsman import WSManProvider
 
@@ -735,11 +736,22 @@ class WSManCLI(WSManProvider):
             if isinstance(arguments, basestring):
                 get_command += "--input=\"%s\"" % arguments
             elif isinstance(arguments, dict):
+                input_file = tempfile.NamedTemporaryFile()
+                input_file.write('<p:%s_INPUT xmlns:p="%s">\n' % (command, reference.resource_uri))
                 for k,v in arguments.items():
-                    get_command += '-k \"%s=%s\" ' % (k,v)
-             
+                    if isinstance(v, list):
+                        for vitem in v:
+                            input_file.write('<p:%s>%s</p:%s>\n' % (k, vitem, k))
+                    else:
+                        input_file.write('<p:%s>%s</p:%s>\n' % (k, v, k))
+                input_file.write('</p:%s_INPUT>\n' % command)
+                get_command += '--input \"%s\" ' % input_file.name
+
+            log.debug ("Executing command %s" % get_command)
             output = self.get_transport().execute(get_command)
-            
+            if input_file:
+                input_file.close()
+
             if raw:
                 return output
             else:
