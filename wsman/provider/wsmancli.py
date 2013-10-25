@@ -745,10 +745,13 @@ class WSManCLI(WSManProvider):
                     else:
                         input_file.write('<p:%s>%s</p:%s>\n' % (k, v, k))
                 input_file.write('</p:%s_INPUT>\n' % command)
+                input_file.seek(0)
                 get_command += '--input \"%s\" ' % input_file.name
 
             log.debug ("Executing command %s" % get_command)
+            log.debug ("XML input file %s content:\n%s" % (input_file.name, input_file.read()))
             output = self.get_transport().execute(get_command)
+
             if input_file:
                 input_file.close()
 
